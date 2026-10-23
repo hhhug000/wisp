@@ -4,7 +4,7 @@ namespace wisp;
 
 internal class Program
 {
-    public static void main(string[] args)
+    public static void Main(string[] args)
     {
         Raylib.InitWindow(800, 450, "Wisp");
         Raylib.SetTargetFPS(60);
