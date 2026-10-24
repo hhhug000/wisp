@@ -67,6 +67,17 @@ internal class Program
             float destX = (screenWidth - destWidth) * 0.5f;
             float destY = (screenHeight - destHeight) * 0.5f;
 
+            // get mouse position and scale it to canvas
+            Vector2 rawMouse = Raylib.GetMousePosition();
+
+            float relX = rawMouse.X - destX;
+            float relY = rawMouse.Y - destY;
+
+            float virtualMouseX = relX / scale;
+            float virtualMouseY = relY / scale;
+
+            bool isInsideCanvas = virtualMouseX >= 0 && virtualMouseX < virtualWidth && virtualMouseY >= 0 && virtualMouseY < virtualHeight;
+
             // Source and dest rec
             Rectangle sourceRec = new Rectangle(0.0f, 0.0f, (float)target.Texture.Width, -(float)target.Texture.Height);
             Rectangle destRec = new Rectangle(destX, destY, destWidth, destHeight);
