@@ -77,6 +77,8 @@ internal class Program
             Raylib.EndDrawing();
         }
 
+        // clean up gpu mem
+        Raylib.UnloadRenderTexture(target);
         Raylib.CloseWindow();
     }
 }
