@@ -9,7 +9,7 @@ public class CodeRunner
     {
         Raylib.ClearBackground(Constants.Colors[colorCode]);
     }
-
+    
     public static void Run(string code, RenderTexture2D texture)
     {
         Script script = new Script();
@@ -18,6 +18,9 @@ public class CodeRunner
         script.Globals["cls"] = (Action<int>)cls;
         
         // from here on it is just running the code
+        // this bit makes sure that you can draw
+        Raylib.BeginTextureMode(texture);
+        
         // this runs the whole code initially
         script.DoString(code);
         
@@ -28,12 +31,17 @@ public class CodeRunner
         {
             script.Call(initFunc);
         }
+        
+        Raylib.EndTextureMode();
+        Program.DrawTextureToWindow(texture);
+        
         DynValue updateFunc = script.Globals.Get("_update");
         DynValue drawFunc = script.Globals.Get("_draw");
 
         // runs forever until close
         while (!Raylib.WindowShouldClose())
         {
+            Raylib.BeginTextureMode(texture);
             Program.HandleWindowResizeAndFullscreen();
             if (updateFunc.Type == DataType.Function)
             {
@@ -41,11 +49,10 @@ public class CodeRunner
             }
             if (drawFunc.Type == DataType.Function)
             {
-                Raylib.BeginTextureMode(texture);
                 script.Call(drawFunc);
-                Raylib.EndTextureMode();
-                Program.DrawTextureToWindow(texture);
             }
+            Raylib.EndTextureMode();
+            Program.DrawTextureToWindow(texture);
         }
     }
 }
