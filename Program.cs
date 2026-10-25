@@ -48,22 +48,11 @@ internal class Program
         PlayIntroAnimation(target);
 
         string code = @"
-            local timer = 0
-        
-            function _update()
-                timer = timer + 1
-            end
-        
             function _draw()
-                if (timer < 60) then
-                    cls(0)
-                else
-                    cls(5)
-                end
-                
-                if (timer >= 120) then
-                    timer = 0
-                end
+                cls(1)
+                rectfill(32, 32, 64, 32, 9)
+                circ(64, 48, 20, 10)
+                print('HELLO WISP', 28, 75, 7)
             end
         ";
 
