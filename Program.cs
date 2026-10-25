@@ -48,18 +48,26 @@ internal class Program
         PlayIntroAnimation(target);
 
         string code = @"
-        function fact(n)
-            if (n == 0) then
-                return 1
-            else
-                return n*fact(n-1)
+            local timer = 0
+        
+            function _update()
+                timer = timer + 1
             end
-        end
-
-        return fact(5)
+        
+            function _draw()
+                if (timer < 60) then
+                    cls(0)
+                else
+                    cls(5)
+                end
+                
+                if (timer >= 120) then
+                    timer = 0
+                end
+            end
         ";
 
-        CodeRunner.Run(code);
+        CodeRunner.Run(code, target);
         
         while (!Raylib.WindowShouldClose())
         {
@@ -95,7 +103,7 @@ internal class Program
         Raylib.CloseWindow();
     }
 
-    private static void DrawTextureToWindow(RenderTexture2D target)
+    public static void DrawTextureToWindow(RenderTexture2D target)
     {
         Raylib.BeginDrawing();
 
@@ -147,7 +155,7 @@ internal class Program
     }
 
     // helper to keep aspect ratio on resize and let user fullscreen
-    private static void HandleWindowResizeAndFullscreen()
+    public static void HandleWindowResizeAndFullscreen()
     {
         if (!Raylib.IsWindowFullscreen())
         {
