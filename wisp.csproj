@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MoonSharp" Version="3.0.0-beta.1" />
     <PackageReference Include="Raylib-cs" Version="8.1.0" />
   </ItemGroup>
 

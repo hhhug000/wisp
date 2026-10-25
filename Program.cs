@@ -1,6 +1,7 @@
 ﻿using System.Data.Common;
 using System.Globalization;
 using System.Numerics;
+using MoonSharp.Interpreter;
 using Raylib_cs;
 
 namespace wisp;
@@ -34,7 +35,7 @@ internal class Program
     {
         Raylib.SetConfigFlags(ConfigFlags.ResizableWindow);
         
-        // bigger so it looks good on screen, render texture will be 128 so it doesnt matter
+        // bigger so it looks good on screen, render texture will be 128 so it doesn't matter
         Raylib.InitWindow(512, 512, "Wisp");
         Raylib.SetTargetFPS(60);
         
@@ -46,6 +47,20 @@ internal class Program
 
         PlayIntroAnimation(target);
 
+        string code = @"
+        function fact(n)
+            if (n == 0) then
+                return 1
+            else
+                return n*fact(n-1)
+            end
+        end
+
+        return fact(5)
+        ";
+
+        CodeRunner.Run(code);
+        
         while (!Raylib.WindowShouldClose())
         {
 
