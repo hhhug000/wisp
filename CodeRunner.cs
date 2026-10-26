@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Numerics;
 using MoonSharp.Interpreter;
 using Raylib_cs;
 
@@ -6,6 +7,11 @@ namespace wisp;
 
 public class CodeRunner
 {
+    // list of pressed buttons
+    private static bool[] currentButtons = new bool[8];
+    private static bool[] previousButtons = new bool[8];
+    
+    // GRAPHICS LIBRARY
     private static void cls(int colorCode)
     {
         Raylib.ClearBackground(Constants.Colors[colorCode]);
@@ -46,11 +52,49 @@ public class CodeRunner
         Raylib.DrawText(text, x, y, 10, Constants.Colors[colorCode]);
     }
     
+    // INPUTS
+    private static bool btn(int i)
+    {
+        if (i < 0 || i >= currentButtons.Length) return false;
+        return currentButtons[i];
+    }
+    
+    private static bool btnp(int i)
+    {
+        if (i < 0 || i >= currentButtons.Length) return false;
+        return currentButtons[i] && !previousButtons[i];
+    }
+
+    private static object mousex()
+    {
+        if (!Raylib.IsCursorOnScreen()) return null;
+        Vector2 vm = Program.GetVirtualMousePosition();
+        if (vm.X >= 0 & vm.X < Constants.VirtualWidth && vm.Y >= 0 && vm.Y < Constants.VirtualHeight)
+        {
+            return (int)vm.X;
+        }
+
+        return null;
+    }
+    
+    private static object mousey()
+    {
+        if (!Raylib.IsCursorOnScreen()) return null;
+        Vector2 vm = Program.GetVirtualMousePosition();
+        if (vm.X >= 0 & vm.X < Constants.VirtualWidth && vm.Y >= 0 && vm.Y < Constants.VirtualHeight)
+        {
+            return (int)vm.Y;
+        }
+
+        return null;
+    }
+    
     public static void Run(string code, RenderTexture2D texture)
     {
         Script script = new Script();
         
         // register all the functions for use in the user code
+        // GRAPHICS LIBRARY
         script.Globals["cls"] = (Action<int>)cls;
         script.Globals["pset"] = (Action<int, int, int>)pset;
         script.Globals["line"] = (Action<int, int, int, int, int>)line;
@@ -59,6 +103,11 @@ public class CodeRunner
         script.Globals["circ"] = (Action<int, int, int, int>)circ;
         script.Globals["circfill"] = (Action<int, int, int, int>)circfill;
         script.Globals["print"] = (Action<string, int, int, int>)print;
+        // INPUTS
+        script.Globals["btn"] = (Func<int, bool>)btn;
+        script.Globals["btnp"] = (Func<int, bool>)btnp;
+        script.Globals["mousex"] = (Func<object>)mousex;
+        script.Globals["mousey"] = (Func<object>)mousey;
         
         // from here on it is just running the code
         // this bit makes sure that you can draw
@@ -84,8 +133,26 @@ public class CodeRunner
         // runs forever until close
         while (!Raylib.WindowShouldClose())
         {
-            Raylib.BeginTextureMode(texture);
             Program.HandleWindowResizeAndFullscreen();
+            
+            // move all current buttons to previous buttons
+            for (int i = 0; i < currentButtons.Length; i++)
+            {
+                previousButtons[i] = currentButtons[i];
+            }
+            
+            // poll for keyboard and mouse buttons and move them to the currentButtons array
+            // 0 is left, 1 is right, 2 is up, 3 is down, 4 is z, 5 is x, 6 is left click, 7 is right click
+            currentButtons[0] = Raylib.IsKeyDown(KeyboardKey.Left) || Raylib.IsKeyDown(KeyboardKey.A);
+            currentButtons[1] = Raylib.IsKeyDown(KeyboardKey.Right) || Raylib.IsKeyDown(KeyboardKey.D);
+            currentButtons[2] = Raylib.IsKeyDown(KeyboardKey.Up) || Raylib.IsKeyDown(KeyboardKey.W);
+            currentButtons[3] = Raylib.IsKeyDown(KeyboardKey.Down) || Raylib.IsKeyDown(KeyboardKey.S);
+            currentButtons[4] = Raylib.IsKeyDown(KeyboardKey.Z);
+            currentButtons[5] = Raylib.IsKeyDown(KeyboardKey.X);
+            currentButtons[6] = Raylib.IsMouseButtonDown(MouseButton.Left);
+            currentButtons[7] = Raylib.IsMouseButtonDown(MouseButton.Right);
+            
+            Raylib.BeginTextureMode(texture);
             if (updateFunc.Type == DataType.Function)
             {
                 script.Call(updateFunc);

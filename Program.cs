@@ -122,7 +122,7 @@ internal class Program
     }
 
     // helper func to map mouse position to canvas space
-    private static Vector2 GetVirtualMousePosition()
+    public static Vector2 GetVirtualMousePosition()
     {
         float screenWidth = Raylib.GetScreenWidth();
         float screenHeight = Raylib.GetScreenHeight();
