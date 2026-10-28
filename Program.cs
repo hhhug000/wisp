@@ -47,7 +47,9 @@ internal class Program
 
         PlayIntroAnimation(target);
 
-        string code = @"
+        string code = @"wisp cartridge
+            version 1
+            __code__
             local rx, ry = 54, 54
             local rw, rh = 20, 14
             local speed = 1
@@ -107,7 +109,7 @@ internal class Program
             end
         ";
 
-        CodeRunner.Run(code, target);
+        CartRunner.RunCart(code, target);
         
         while (!Raylib.WindowShouldClose())
         {

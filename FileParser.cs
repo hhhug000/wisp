@@ -1,3 +1,6 @@
+using System.Runtime.InteropServices;
+using Raylib_cs;
+
 namespace wisp;
 
 using System;
@@ -64,4 +67,62 @@ public class FileParser
         
         return sections;
     }
+
+    // func to convert spritesheet in text format to a Raylib Texture2D
+    public unsafe static Texture2D LoadSpriteSheet(string spriteText)
+    {
+        // split to lines for processing
+        string[] lines = spriteText.Split(new[] { "\r\n", "\r", "\n"}, StringSplitOptions.RemoveEmptyEntries);
+
+        int width = 128;
+        int height = 128;
+        // all the pixels
+        Color[] pixels = new Color[width * height];
+
+        int pixelIndex = 0;
+        foreach (string line in lines)
+        {
+            foreach (char c in line)
+            {
+                if (pixelIndex >= pixels.Length) break;
+
+                int colourIndex = Convert.ToInt32(c.ToString(), 16);
+
+                if (colourIndex >= 0 && colourIndex < Constants.Colors.Length)
+                {
+                    pixels[pixelIndex] = Constants.Colors[colourIndex];
+                }
+                else
+                {
+                    pixels[pixelIndex] = Color.Blank;
+                }
+
+                pixelIndex++;
+            }
+        }
+
+        // AAAAAAHHHHHH garbage 
+        // forces memory address to not change
+        GCHandle handle = GCHandle.Alloc(pixels, GCHandleType.Pinned);
+        try
+        {
+            Image img = new Image
+            {
+                Data = (void*)handle.AddrOfPinnedObject(),
+                Width = width,
+                Height = height,
+                Mipmaps = 1,
+                Format = PixelFormat.UncompressedR8G8B8A8
+            };
+
+            Texture2D texture = Raylib.LoadTextureFromImage(img);
+            Raylib.SetTextureFilter(texture, TextureFilter.Point);
+            return texture;
+        }
+        finally
+        {
+            handle.Free();
+        }
+    }
+    
 }

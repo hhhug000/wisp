@@ -7,6 +7,9 @@ namespace wisp;
 
 public class CodeRunner
 {
+    // spritesheet to be imported
+    private static Texture2D spritesheet;
+    
     // list of pressed buttons
     private static bool[] currentButtons = new bool[8];
     private static bool[] previousButtons = new bool[8];
@@ -51,6 +54,32 @@ public class CodeRunner
     {
         Raylib.DrawText(text, x, y, 10, Constants.Colors[colorCode]);
     }
+
+    private static void spr(int n, int x, int y, int? w = null, int? h = null, bool? flipX = null, bool? flipY = null)
+    {
+        int widthTiles = w ?? 1;
+        int heightTiles = h ?? 1;
+        bool fx = flipX ?? false;
+        bool fy = flipY ?? false;
+
+        int tilesPerRow = 16; // 128 / 8px per tile
+        float tileSize = 8.0f;
+
+        int srcX = (n % tilesPerRow) * (int)tileSize;
+        int srcY = (n / tilesPerRow) * (int)tileSize;
+
+        float sourceWidth = widthTiles * tileSize;
+        float sourceHeight = heightTiles * tileSize;
+
+        if (fx) sourceWidth = -sourceWidth;
+        if (fy) sourceHeight = -sourceHeight;
+
+        Rectangle sourceRec = new Rectangle(srcX, srcY, sourceWidth, sourceHeight);
+        Rectangle destRec = new Rectangle(x, y, widthTiles * tileSize, heightTiles * tileSize);
+        Vector2 origin = Vector2.Zero;
+        
+        Raylib.DrawTexturePro(spritesheet, sourceRec, destRec, origin, 0.0f, Color.White);
+    }
     
     // INPUTS
     private static bool btn(int i)
@@ -89,8 +118,11 @@ public class CodeRunner
         return null;
     }
     
-    public static void Run(string code, RenderTexture2D texture)
+    public static void Run(string code, RenderTexture2D texture, Texture2D spritesheetTexture)
     {
+        // save the spritesheetTexture to spritesheet so it can be used in the spr func
+        spritesheet = spritesheetTexture;
+        
         Script script = new Script();
         
         // register all the functions for use in the user code
@@ -103,6 +135,7 @@ public class CodeRunner
         script.Globals["circ"] = (Action<int, int, int, int>)circ;
         script.Globals["circfill"] = (Action<int, int, int, int>)circfill;
         script.Globals["print"] = (Action<string, int, int, int>)print;
+        script.Globals["spr"] = (Action<int, int, int, int?, int?, bool?, bool?>)spr;
         // INPUTS
         script.Globals["btn"] = (Func<int, bool>)btn;
         script.Globals["btnp"] = (Func<int, bool>)btnp;
