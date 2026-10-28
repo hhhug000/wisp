@@ -84,17 +84,27 @@ public class FileParser
         {
             foreach (char c in line)
             {
+                if (char.IsWhiteSpace(c)) continue;
+                
                 if (pixelIndex >= pixels.Length) break;
 
-                int colourIndex = Convert.ToInt32(c.ToString(), 16);
-
-                if (colourIndex >= 0 && colourIndex < Constants.Colors.Length)
+                if (c == '.')
                 {
-                    pixels[pixelIndex] = Constants.Colors[colourIndex];
+                    pixels[pixelIndex] = Color.Blank;
                 }
                 else
                 {
-                    pixels[pixelIndex] = Color.Blank;
+
+                    int colourIndex = Convert.ToInt32(c.ToString(), 16);
+
+                    if (colourIndex >= 0 && colourIndex < Constants.Colors.Length)
+                    {
+                        pixels[pixelIndex] = Constants.Colors[colourIndex];
+                    }
+                    else
+                    {
+                        pixels[pixelIndex] = Color.Blank;
+                    }
                 }
 
                 pixelIndex++;

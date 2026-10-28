@@ -48,65 +48,75 @@ internal class Program
         PlayIntroAnimation(target);
 
         string code = @"wisp cartridge
-            version 1
-            __code__
-            local rx, ry = 54, 54
-            local rw, rh = 20, 14
-            local speed = 1
-            local msg = 'PRESS Z OR X'
-            
-            function _init()
-            end
-            
-            function _update()
-                if btn(0) then rx = rx - speed end
-                if btn(1) then rx = rx + speed end
-                if btn(2) then ry = ry - speed end
-                if btn(3) then ry = ry + speed end
-            
-                if btn(4) then
-                    msg = 'Z IS HELD!'
-                elseif btn(5) then
-                    msg = 'X IS HELD!'
-                else
-                    msg = 'PRESS Z OR X'
-                end
-            end
-            
-            function _draw()
-                cls(1)
-            
-                line(2, 2, 125, 2, 6)
-                line(125, 2, 125, 125, 6)
-                line(125, 125, 2, 125, 6)
-                line(2, 125, 2, 2, 6)
-            
-                rect(10, 10, 30, 15, 8)
-                rectfill(rx, ry, rw, rh, 9)
-            
-                circ(96, 25, 10, 10)
-                circfill(96, 25, 5, 11)
-            
-                pset(6, 6, 7)
-                pset(7, 6, 7)
-                pset(6, 7, 7)
-            
-                print('WISP DEMO', 36, 5, 7)
-                print(msg, 14, 112, 10)
-            
-                local mx = mousex()
-                local my = mousey()
-            
-                if mx ~= nil and my ~= nil then
-                    pset(mx, my, 8)
-                    pset(mx + 1, my, 8)
-                    pset(mx - 1, my, 8)
-                    pset(mx, my + 1, 8)
-                    pset(mx, my - 1, 8)
-                else
-                    print('MOUSE OFF', 72, 112, 5)
-                end
-            end
+version 1
+__code__
+local rx, ry = 54, 54
+local speed = 1
+local msg = 'PRESS Z OR X'
+
+function _init()
+end
+
+function _update()
+    if btn(0) then rx = rx - speed end
+    if btn(1) then rx = rx + speed end
+    if btn(2) then ry = ry - speed end
+    if btn(3) then ry = ry + speed end
+
+    if btn(4) then
+        msg = 'Z IS HELD!'
+    elseif btn(5) then
+        msg = 'X IS HELD!'
+    else
+        msg = 'PRESS Z OR X'
+    end
+end
+
+function _draw()
+    cls(1)
+
+    line(2, 2, 125, 2, 6)
+    line(125, 2, 125, 125, 6)
+    line(125, 125, 2, 125, 6)
+    line(2, 125, 2, 2, 6)
+
+    rect(10, 10, 30, 15, 8)
+    
+    spr(0, rx, ry)
+
+    circ(96, 25, 10, 10)
+    circfill(96, 25, 5, 11)
+
+    pset(6, 6, 7)
+    pset(7, 6, 7)
+    pset(6, 7, 7)
+
+    print('WISP DEMO', 36, 5, 7)
+    print(msg, 14, 112, 10)
+
+    local mx = mousex()
+    local my = mousey()
+
+    if mx ~= nil and my ~= nil then
+        pset(mx, my, 8)
+        pset(mx + 1, my, 8)
+        pset(mx - 1, my, 8)
+        pset(mx, my + 1, 8)
+        pset(mx, my - 1, 8)
+    else
+        print('MOUSE OFF', 72, 112, 5)
+    end
+end
+__sprites__
+..7777..........................................................................................................................
+.788887.........................................................................................................................
+78088087........................................................................................................................
+78888887........................................................................................................................
+.788887.........................................................................................................................
+..7777..........................................................................................................................
+..7..7..........................................................................................................................
+................................................................................................................................
+
         ";
 
         CartRunner.RunCart(code, target);
