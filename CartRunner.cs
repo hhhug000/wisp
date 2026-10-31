@@ -9,6 +9,11 @@ public class CartRunner
     {
         Dictionary<string, string> cartContent = FileParser.SplitToSections(cartText);
         Texture2D spritesheet = FileParser.LoadSpriteSheet(cartContent["sprites"]);
-        CodeRunner.Run(cartContent["code"], texture, spritesheet);
+
+        int[,] map = cartContent.ContainsKey("map")
+            ? FileParser.ParseMap(cartContent["map"])
+            : new int[0, 0];
+        
+        CodeRunner.Run(cartContent["code"], texture, spritesheet, map);
     }
 }

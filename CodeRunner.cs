@@ -9,10 +9,21 @@ public class CodeRunner
 {
     // spritesheet to be imported
     private static Texture2D spritesheet;
+
+    // the map
+    private static int[,] mapData;
     
     // list of pressed buttons
     private static bool[] currentButtons = new bool[8];
     private static bool[] previousButtons = new bool[8];
+    
+    // gets the tile id at a map coord
+    private static int mget(int x, int y)
+    {
+        if (mapData == null) return 0;
+        if (x < 0 || x >= mapData.GetLength(0) || y < 0 || y >= mapData.GetLength(1)) return 0;
+        return mapData[x, y];
+    }
     
     // GRAPHICS LIBRARY
     private static void cls(int colorCode)
@@ -80,6 +91,46 @@ public class CodeRunner
         
         Raylib.DrawTexturePro(spritesheet, sourceRec, destRec, origin, 0.0f, Color.White);
     }
+
+    private static void map(int tileX, int tileY, int? sx = null, int? sy = null, int? tileW = null, int? tileH = null, object layers = null)
+    {
+        if (mapData == null) return;
+
+        int screenX = sx ?? 0;
+        int screenY = sy ?? 0;
+
+        int mapCols = mapData.GetLength(0);
+        int mapRows = mapData.GetLength(1);
+
+        int widthInTiles = tileW ?? (mapCols - tileX);
+        int heightInTiles = tileH ?? (mapRows - tileY);
+
+        // one tile is 8x8px
+        int tileSize = 8;
+
+        for (int ty = 0; ty < heightInTiles; ty++)
+        {
+            for (int tx = 0; tx < widthInTiles; tx++)
+            {
+                int mx = tileX + tx;
+                int my = tileY + ty;
+
+                if (mx >= 0 && mx < mapCols && my >= 0 && my < mapRows)
+                {
+                    int tileId = mapData[mx, my];
+
+                    // skip tile 0 if its empty
+                    if (tileId > 0)
+                    {
+                        float drawX = screenX + (tx * tileSize);
+                        float drawY = screenY + (ty * tileSize);
+                        
+                        spr(tileId, (int)drawX, (int)drawY);
+                    }
+                }
+            }
+        }
+    }
     
     // INPUTS
     private static bool btn(int i)
@@ -118,14 +169,17 @@ public class CodeRunner
         return null;
     }
     
-    public static void Run(string code, RenderTexture2D texture, Texture2D spritesheetTexture)
+    public static void Run(string code, RenderTexture2D texture, Texture2D spritesheetTexture, int[,] mapTiles)
     {
         // save the spritesheetTexture to spritesheet so it can be used in the spr func
         spritesheet = spritesheetTexture;
+        mapData = mapTiles;
         
         Script script = new Script();
         
         // register all the functions for use in the user code
+
+        script.Globals["mget"] = (Func<int, int, int>)mget;
         // GRAPHICS LIBRARY
         script.Globals["cls"] = (Action<int>)cls;
         script.Globals["pset"] = (Action<int, int, int>)pset;
@@ -136,6 +190,7 @@ public class CodeRunner
         script.Globals["circfill"] = (Action<int, int, int, int>)circfill;
         script.Globals["print"] = (Action<string, int, int, int>)print;
         script.Globals["spr"] = (Action<int, int, int, int?, int?, bool?, bool?>)spr;
+        script.Globals["map"] = (Action<int, int, int?, int?, int?, int?, object>)map;
         // INPUTS
         script.Globals["btn"] = (Func<int, bool>)btn;
         script.Globals["btnp"] = (Func<int, bool>)btnp;
