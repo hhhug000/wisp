@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 using Raylib_cs;
 
 namespace wisp;
@@ -133,6 +134,42 @@ public class FileParser
         {
             handle.Free();
         }
+    }
+
+    public static int[,] ParseMap(string mapText)
+    {
+        // split maptext into lines
+        string[] lines = mapText.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+        
+        int rows = lines.Length;
+        int cols = rows > 0 ? lines[0].Length / 2 : 0;
+
+        int[,] mapGrid = new int[cols, rows];
+
+        // loop through all the rows
+        for (int y = 0; y < rows; y++)
+        {
+            string line = lines[y];
+            for (int x = 0; x < cols; x++)
+            {
+                // 2 hex chars so it needs to be *2
+                int charIndex = x * 2;
+                if (charIndex + 1 < line.Length)
+                {
+                    string hexPair = line.Substring(charIndex, 2);
+                    if (int.TryParse(hexPair, System.Globalization.NumberStyles.HexNumber, null, out int tileId))
+                    {
+                        mapGrid[x, y] = tileId;
+                    }
+                    else
+                    {
+                        mapGrid[x, y] = 0;
+                    }
+                }
+            }
+        }
+
+        return mapGrid;
     }
     
 }
