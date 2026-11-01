@@ -9,13 +9,60 @@ public class CodeRunner
 {
     // spritesheet to be imported
     private static Texture2D spritesheet;
-
     // the map
     private static int[,] mapData;
+    // random generator
+    private static Random random = new Random();
     
     // list of pressed buttons
     private static bool[] currentButtons = new bool[8];
     private static bool[] previousButtons = new bool[8];
+    
+    // UTILITIES
+    private static float min(float a, float b) => Math.Min(a, b);
+    private static float max(float a, float b) => Math.Max(a, b);
+
+    private static float mid(float x, float y, float z)
+    {
+        if (x > y) (x, y) = (y, x);
+        if (y > z) (y, z) = (z, y);
+        if (x > y) (x, y) = (y, x);
+        return y;
+    }
+
+    // angle * 2.0 * Math.PI is there so angles go from 0 to 1 instead of from 0 to 2Pi
+    private static float cos(float angle) => (float)Math.Cos(angle * 2.0 * Math.PI);
+    private static float sin(float angle) => (float)Math.Sin(-angle * 2.0 * Math.PI);
+    private static float atan2(float x, float y) => (float)(Math.Atan2(-y, x) / (2.0 * Math.PI));
+    private static float abs(float x) => Math.Abs(x);
+    private static float sqrt(float x) => (float)Math.Sqrt(x);
+
+    private static float rnd(object x = null)
+    {
+        if (x == null)
+        {
+            return (float)random.NextDouble();
+        }
+        else if (x is double d)
+        {
+            return (float)(random.NextDouble() * d);
+        }
+        else if (x is int i)
+        {
+            return (float)(random.NextDouble() * i);
+        }
+        else if (x is MoonSharp.Interpreter.Table t)
+        {
+            int idx = random.Next(1, t.Values.Count() + 1);
+            return (float)(t.Get(idx).Number);
+        }
+        return 0f;
+    }
+
+    private static void srand(int seed)
+    {
+        random = new Random(seed);
+    }
     
     // gets the tile id at a map coord
     private static int mget(int x, int y)
@@ -179,6 +226,17 @@ public class CodeRunner
         
         // register all the functions for use in the user code
 
+        // UTILITIES
+        script.Globals["min"] = (Func<float, float, float>)min;
+        script.Globals["max"] = (Func<float, float, float>)max;
+        script.Globals["mid"] = (Func<float, float, float, float>)mid;
+        script.Globals["cos"] = (Func<float, float>)cos;
+        script.Globals["sin"] = (Func<float, float>)sin;
+        script.Globals["atan2"] = (Func<float, float, float>)atan2;
+        script.Globals["abs"] = (Func<float, float>)abs;
+        script.Globals["sqrt"] = (Func<float, float>)sqrt;
+        script.Globals["rnd"] = (Func<object, float>)rnd;
+        script.Globals["srand"] = (Action<int>)srand;
         script.Globals["mget"] = (Func<int, int, int>)mget;
         // GRAPHICS LIBRARY
         script.Globals["cls"] = (Action<int>)cls;
