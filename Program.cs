@@ -37,6 +37,7 @@ internal class Program
         
         // bigger so it looks good on screen, render texture will be 128 so it doesn't matter
         Raylib.InitWindow(512, 512, "Wisp");
+        Raylib.InitAudioDevice();
         Raylib.SetTargetFPS(60);
         
 
@@ -152,6 +153,7 @@ __sprites__
 
         // clean up gpu mem
         Raylib.UnloadRenderTexture(target);
+        Raylib.CloseAudioDevice();
         Raylib.CloseWindow();
     }
 

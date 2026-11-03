@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using Raylib_cs;
@@ -170,6 +171,96 @@ public class FileParser
         }
 
         return mapGrid;
+    }
+
+    public unsafe static Sound[] LoadSoundEffect(string sfxText)
+    {
+        Sound[] sfxList = new Sound[64];
+
+        if (string.IsNullOrWhiteSpace(sfxText))
+        {
+            return sfxList;
+        }
+
+        string[] lines = sfxText.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (string line in lines)
+        {
+            string trimmed = line.Trim();
+
+            // the format for it should be like this:
+            // id, starting frequency, ending frequency, waveform, duration
+            string[] parts = trimmed.Split(',');
+            if (parts.Length >= 5)
+            {
+                if (int.TryParse(parts[0].Trim(), out int id) && id >= 0 && id < sfxList.Length)
+                {
+                    float startFreq = float.Parse(parts[1].Trim(), CultureInfo.InvariantCulture);
+                    float endFreq = float.Parse(parts[2].Trim(), CultureInfo.InvariantCulture);
+                    int waveform = int.Parse(parts[3].Trim(), CultureInfo.InvariantCulture);
+                    int durationFrames = int.Parse(parts[4].Trim(), CultureInfo.InvariantCulture);
+
+                    sfxList[id] = GenerateProceduralSound(startFreq, endFreq, waveform, durationFrames);
+                }
+            }
+        }
+
+        return sfxList;
+    }
+
+    private unsafe static Sound GenerateProceduralSound(float startFreq, float endFreq, int waveform, int durationFrames)
+    {
+        // this is cd quality
+        // more than enough i dont need better
+        int sampleRate = 44100;
+        int sampleCount = (int)(sampleRate * (durationFrames / 60.0f)); // scale length based on framerate
+        short[] samples = new short[sampleCount];
+
+        for (int i = 0; i < sampleCount; i++)
+        {
+            float t = (float)i / sampleCount;
+            
+            float currentFreq = startFreq + (endFreq - startFreq) * t;
+            
+            float sampleNormalized = 0f;
+            float angle = 2.0f * (float)Math.PI * currentFreq * ((float)i / sampleRate);
+            
+            if (waveform == 0) // sine wave
+            {
+                sampleNormalized = (float)Math.Sin(angle);
+            }
+            else if (waveform == 1) // square wave
+            {
+                sampleNormalized = Math.Sin(angle) >= 0 ? 1.0f : -1.0f;
+            }
+            else // noise
+            {
+                sampleNormalized = ((float)Random.Shared.NextDouble() * 2.0f) - 1.0f;
+            }
+
+            // volume envelope
+            float envelope = 1.0f - t;
+
+            // +-32768 is 16 bit PCM
+            // also half volume
+            samples[i] = (short)(sampleNormalized * envelope * 32767 * 0.5f);
+        }
+        
+        fixed (short* ptr = samples)
+        {
+            Wave wave = new Wave
+            {
+                Data = ptr,
+                SampleCount = (uint)sampleCount,
+                SampleRate = (uint)sampleRate,
+                Channels = 1, // mono sound
+                SampleSize = 16, // 16 bit
+                Type = PixelFormat.UncompressedGrayscale
+            };
+
+            Sound sound = Raylib.LoadSoundFromWave(wave);
+            return sound;
+        }
     }
     
 }
