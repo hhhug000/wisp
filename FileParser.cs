@@ -173,7 +173,7 @@ public class FileParser
         return mapGrid;
     }
 
-    public unsafe static Sound[] LoadSoundEffect(string sfxText)
+    public unsafe static Sound[] LoadSoundEffects(string sfxText)
     {
         Sound[] sfxList = new Sound[64];
 
@@ -251,11 +251,10 @@ public class FileParser
             Wave wave = new Wave
             {
                 Data = ptr,
-                SampleCount = (uint)sampleCount,
+                FrameCount = (uint)sampleCount,
                 SampleRate = (uint)sampleRate,
                 Channels = 1, // mono sound
                 SampleSize = 16, // 16 bit
-                Type = PixelFormat.UncompressedGrayscale
             };
 
             Sound sound = Raylib.LoadSoundFromWave(wave);

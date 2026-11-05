@@ -13,7 +13,19 @@ public class CartRunner
         int[,] map = cartContent.ContainsKey("map")
             ? FileParser.ParseMap(cartContent["map"])
             : new int[0, 0];
+
+        Sound[] sfx = cartContent.ContainsKey("sfx")
+            ? FileParser.LoadSoundEffects(cartContent["sfx"])
+            : new Sound[64];
         
-        CodeRunner.Run(cartContent["code"], texture, spritesheet, map);
+        CodeRunner.Run(cartContent["code"], texture, spritesheet, map, sfx);
+
+        foreach (var sound in sfx)
+        {
+            if (sound.FrameCount > 0)
+            {
+                Raylib.UnloadSound(sound);
+            }
+        }
     }
 }

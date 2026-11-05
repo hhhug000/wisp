@@ -11,6 +11,8 @@ public class CodeRunner
     private static Texture2D spritesheet;
     // the map
     private static int[,] mapData;
+    // sound effect storage
+    private static Sound[] soundEffects = new Sound[64];
     // random generator
     private static Random random = new Random();
     
@@ -216,11 +218,21 @@ public class CodeRunner
         return null;
     }
     
-    public static void Run(string code, RenderTexture2D texture, Texture2D spritesheetTexture, int[,] mapTiles)
+    // SOUND EFFECTS
+    private static void sfx(int n)
+    {
+        if (n >= 0 && n < soundEffects.Length && soundEffects[n].FrameCount > 0)
+        {
+            Raylib.PlaySound(soundEffects[n]);
+        }
+    }
+    
+    public static void Run(string code, RenderTexture2D texture, Texture2D spritesheetTexture, int[,] mapTiles, Sound[] sfxArray)
     {
         // save the spritesheetTexture to spritesheet so it can be used in the spr func
         spritesheet = spritesheetTexture;
         mapData = mapTiles;
+        soundEffects = sfxArray;
         
         Script script = new Script();
         
@@ -254,6 +266,8 @@ public class CodeRunner
         script.Globals["btnp"] = (Func<int, bool>)btnp;
         script.Globals["mousex"] = (Func<object>)mousex;
         script.Globals["mousey"] = (Func<object>)mousey;
+        // SOUND EFFECTS
+        script.Globals["sfx"] = (Action<int>)sfx;
         
         // from here on it is just running the code
         // this bit makes sure that you can draw
