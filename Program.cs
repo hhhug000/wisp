@@ -64,11 +64,13 @@ function _update()
     if btn(2) then ry = ry - speed end
     if btn(3) then ry = ry + speed end
 
-    if btn(4) then
-        msg = 'Z IS HELD!'
-    elseif btn(5) then
-        msg = 'X IS HELD!'
-    else
+    if btnp(4) then
+        sfx(0)
+        msg = 'Z IS PRESSED!'
+    elseif btnp(5) then
+        sfx(1)
+        msg = 'X IS PRESSED!'
+    elseif not btn(4) and not btn(5) then
         msg = 'PRESS Z OR X'
     end
 end
@@ -81,19 +83,19 @@ function _draw()
     line(125, 125, 2, 125, 6)
     line(2, 125, 2, 2, 6)
 
-    rect(10, 10, 30, 15, 8)
+    rect(10, 20, 30, 15, 8)
     
     spr(0, rx, ry)
 
-    circ(96, 25, 10, 10)
-    circfill(96, 25, 5, 11)
+    circ(96, 30, 10, 10)
+    circfill(96, 30, 5, 11)
 
     pset(6, 6, 7)
     pset(7, 6, 7)
     pset(6, 7, 7)
 
     print('WISP DEMO', 36, 5, 7)
-    print(msg, 14, 112, 10)
+    print(msg, 20, 112, 10)
 
     local mx = mousex()
     local my = mousey()
@@ -105,7 +107,7 @@ function _draw()
         pset(mx, my + 1, 8)
         pset(mx, my - 1, 8)
     else
-        print('MOUSE OFF', 72, 112, 5)
+        print('MOUSE OFF', 20, 100, 5)
     end
 end
 __sprites__
@@ -117,7 +119,9 @@ __sprites__
 ..7777..........................................................................................................................
 ..7..7..........................................................................................................................
 ................................................................................................................................
-
+__sfx__
+0, 220, 880, 1, 12
+1, 880, 220, 0, 15
         ";
 
         CartRunner.RunCart(code, target);
