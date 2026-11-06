@@ -176,31 +176,39 @@ public class FileParser
     public unsafe static Sound[] LoadSoundEffects(string sfxText)
     {
         Sound[] sfxList = new Sound[64];
-
-        if (string.IsNullOrWhiteSpace(sfxText))
-        {
-            return sfxList;
-        }
+        if (string.IsNullOrWhiteSpace(sfxText)) return sfxList;
 
         string[] lines = sfxText.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
 
         foreach (string line in lines)
         {
             string trimmed = line.Trim();
+            if (trimmed.StartsWith("--") || string.IsNullOrEmpty(trimmed)) continue;
 
-            // the format for it should be like this:
-            // id, starting frequency, ending frequency, waveform, duration
-            string[] parts = trimmed.Split(',');
-            if (parts.Length >= 5)
+            string[] mainParts = trimmed.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries);
+            if (mainParts.Length >= 5)
             {
-                if (int.TryParse(parts[0].Trim(), out int id) && id >= 0 && id < sfxList.Length)
+                if (int.TryParse(mainParts[0], out int id) && id >= 0 && id < 64)
                 {
-                    float startFreq = float.Parse(parts[1].Trim(), CultureInfo.InvariantCulture);
-                    float endFreq = float.Parse(parts[2].Trim(), CultureInfo.InvariantCulture);
-                    int waveform = int.Parse(parts[3].Trim(), CultureInfo.InvariantCulture);
-                    int durationFrames = int.Parse(parts[4].Trim(), CultureInfo.InvariantCulture);
+                    int speed = int.Parse(mainParts[1]);
 
-                    sfxList[id] = GenerateProceduralSound(startFreq, endFreq, waveform, durationFrames);
+                    List<SFXStep> steps = new List<SFXStep>();
+                    for (int i = 4; i < mainParts.Length && i < 36 + 4; i++)
+                    {
+                        string[] stepParts = mainParts[i].Split(':');
+                        if (stepParts.Length >= 4)
+                        {
+                            steps.Add(new SFXStep
+                            {
+                                Pitch = int.Parse(stepParts[0]),
+                                Waveform = int.Parse(stepParts[1]),
+                                Volume = int.Parse(stepParts[2]),
+                                Effect = int.Parse(stepParts[3]),
+                            });
+                        }
+                    }
+
+                    sfxList[id] = GenerateProceduralSound(speed, steps);
                 }
             }
         }
@@ -208,50 +216,87 @@ public class FileParser
         return sfxList;
     }
 
-    private unsafe static Sound GenerateProceduralSound(float startFreq, float endFreq, int waveform, int durationFrames)
+    public struct SFXStep
     {
-        // this is cd quality
+        public int Pitch;
+        public int Waveform;
+        public int Volume;
+        public int Effect;
+    }
+    
+    private unsafe static Sound GenerateProceduralSound(int speed, List<SFXStep> steps)
+    {
+        if (steps.Count == 0) return new Sound();
+        
+        // move to lower sample rate for retro sound
         // more than enough i dont need better
-        int sampleRate = 44100;
-        int sampleCount = (int)(sampleRate * (durationFrames / 60.0f)); // scale length based on framerate
-        short[] samples = new short[sampleCount];
+        int sampleRate = 22050;
+        int samplesPerStep = (int)(sampleRate * (speed / 60.0f)); // scale length based on framerate
+        int totalSamples = steps.Count * samplesPerStep;
+        short[] samples = new short[totalSamples];
 
-        for (int i = 0; i < sampleCount; i++)
+        int globalIndex = 0;
+        float currentPhase = 0f;
+
+        foreach (var step in steps)
         {
-            float t = (float)i / sampleCount;
-            
-            float currentFreq = startFreq + (endFreq - startFreq) * t;
-            
-            float sampleNormalized = 0f;
-            float angle = 2.0f * (float)Math.PI * currentFreq * ((float)i / sampleRate);
-            
-            if (waveform == 0) // sine wave
+            if (step.Volume == 0)
             {
-                sampleNormalized = (float)Math.Sin(angle);
-            }
-            else if (waveform == 1) // square wave
-            {
-                sampleNormalized = Math.Sin(angle) >= 0 ? 1.0f : -1.0f;
-            }
-            else // noise
-            {
-                sampleNormalized = ((float)Random.Shared.NextDouble() * 2.0f) - 1.0f;
+                for (int i = 0; i < samplesPerStep; i++)
+                {
+                    samples[globalIndex++] = 0;
+                }
+                continue;
             }
 
-            // volume envelope
-            float envelope = 1.0f - t;
+            // convert pitch (0-63) to frequency in hertz, so 36 is C-2 / ~130.81Hz
+            float targetFreq = 440.0f * (float)Math.Pow(2.0, (step.Pitch - 33) / 12.0);
+            float amplitude = (step.Volume / 7.0f) * 0.4f;
 
-            // +-32768 is 16 bit PCM
-            // also half volume
-            samples[i] = (short)(sampleNormalized * envelope * 32767 * 0.5f);
+            for (int i = 0; i < samplesPerStep; i++)
+            {
+                float t = (float)i / samplesPerStep;
+                float freq = targetFreq;
+
+                // handle effects
+                if (step.Effect == 1) // slide
+                {
+                    freq = targetFreq * (0.8f + (0.4f * t));
+                }
+                else if (step.Effect == 2) // vibrato
+                {
+                    freq += (float)Math.Sin(t * 30.0f) * 4.0f;
+                }
+                else if (step.Effect == 5) // fade out envelope
+                {
+                    amplitude *= (1.0f - t);
+                }
+
+                currentPhase += freq / sampleRate;
+                currentPhase %= 1.0f;
+
+                float sample = step.Waveform switch
+                {
+                    0 => (float)Math.Sin(currentPhase * 2.0 * Math.PI),
+                    1 => currentPhase < 0.5f ? 1.0f : -1.0f,
+                    2 => (currentPhase * 2.0f) - 1.0f,
+                    _ => ((float)Random.Shared.NextDouble() * 2.0f) - 1.0f
+                };
+
+                // per step click suppression envelope
+                float clickEnvelope = Math.Min(1.0f, Math.Min(i / 50.0f, (samplesPerStep - i) / 50.0f));
+
+                samples[globalIndex] = (short)(sample * clickEnvelope * amplitude * 32767);
+                globalIndex++;
+            }
         }
         
         fixed (short* ptr = samples)
         {
             Wave wave = new Wave
             {
-                Data = ptr,
-                FrameCount = (uint)sampleCount,
+                Data = (void*)ptr,
+                FrameCount = (uint)totalSamples,
                 SampleRate = (uint)sampleRate,
                 Channels = 1, // mono sound
                 SampleSize = 16, // 16 bit
