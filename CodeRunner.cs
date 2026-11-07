@@ -15,11 +15,155 @@ public class CodeRunner
     private static Sound[] soundEffects = new Sound[64];
     // random generator
     private static Random random = new Random();
+    // lots of music stuff
+    private static List<FileParser.MusicRow> activeTrack = new List<FileParser.MusicRow>();
+    private static int currentMusicRowIndex = -1;
+    private static int musicRowTimer = 0;
+    private static Sound[] musicChannels = new Sound[4]; // 4 channels
     
     // list of pressed buttons
     private static bool[] currentButtons = new bool[8];
     private static bool[] previousButtons = new bool[8];
     
+    private static void UpdateMusicSequencer()
+    {
+        if (currentMusicRowIndex < 0 || activeTrack.Count == 0) return;
+
+        musicRowTimer++;
+        FileParser.MusicRow currentRow = activeTrack[currentMusicRowIndex];
+
+        if (musicRowTimer >= currentRow.Ticks)
+        {
+            musicRowTimer = 0;
+            currentMusicRowIndex = (currentMusicRowIndex + 1) % activeTrack.Count; // loop song
+
+            for (int i = 0; i < 4; i++)
+            {
+                PlayMusicChannelNote(i, currentRow.Channels[i]);
+            }
+        }
+    }
+    
+    private static void PlayMusicChannelNote(int channelIndex, string noteToken)
+    {
+        // unload previous sound on this channel to prevent memory leaks
+        if (musicChannels[channelIndex].FrameCount > 0)
+        {
+            Raylib.StopSound(musicChannels[channelIndex]);
+            Raylib.UnloadSound(musicChannels[channelIndex]);
+        }
+
+        if (noteToken.StartsWith("--")) return;
+
+        // parse format "C-3:1:7"
+        string[] parts = noteToken.Split(':');
+        if (parts.Length < 3) return;
+
+        string noteName = parts[0];
+        int waveform = int.Parse(parts[1]);
+        int volume = int.Parse(parts[2]);
+
+        float freq = NoteToFrequency(noteName);
+    
+        musicChannels[channelIndex] = GenerateNoteSound(freq, waveform, volume, 30);
+        Raylib.PlaySound(musicChannels[channelIndex]);
+    }
+    
+    private unsafe static Sound GenerateNoteSound(float freq, int waveform, int volume, int durationTicks)
+    {
+        if (freq <= 0 || volume == 0) return new Sound();
+
+        int sampleRate = 22050;
+        int totalSamples = (int)(sampleRate * (durationTicks / 60.0f)); // duration ticks at 60fps
+        short[] samples = new short[totalSamples];
+        float amplitude = (volume / 7.0f) * 0.4f;
+        float currentPhase = 0f;
+
+        for (int i = 0; i < totalSamples; i++)
+        {
+            currentPhase += freq / sampleRate;
+            currentPhase %= 1.0f;
+
+            float sample = waveform switch
+            {
+                0 => (float)Math.Sin(currentPhase * 2.0 * Math.PI), // Sine
+                1 => currentPhase < 0.5f ? 1.0f : -1.0f, // Square
+                2 => (currentPhase * 2.0f) - 1.0f, // Sawtooth
+                _ => ((float)Random.Shared.NextDouble() * 2.0f) - 1.0f // Noise
+            };
+
+            // Click suppression envelope at start and end of note
+            float envelope = Math.Min(1.0f, Math.Min(i / 30.0f, (totalSamples - i) / 30.0f));
+
+            samples[i] = (short)(sample * envelope * amplitude * 32767);
+        }
+
+        fixed (short* ptr = samples)
+        {
+            Wave wave = new Wave
+            {
+                Data = (void*)ptr,
+                FrameCount = (uint)totalSamples,
+                SampleRate = (uint)sampleRate,
+                Channels = 1,
+                SampleSize = 16
+            };
+            return Raylib.LoadSoundFromWave(wave);
+        }
+    }
+    
+    private static float NoteToFrequency(string noteStr)
+    {
+        if (string.IsNullOrEmpty(noteStr) || noteStr.StartsWith("--")) return 0f;
+
+        char note = char.ToUpper(noteStr[0]);
+        bool sharp = noteStr.Length > 1 && noteStr[1] == '#';
+        int octaveIndex = sharp ? 2 : (noteStr.Length > 1 && noteStr[1] == '-' ? 2 : 1);
+
+        if (int.TryParse(noteStr.Substring(octaveIndex), out int octave))
+        {
+            int semitone = note switch
+            {
+                'C' => 0,
+                'D' => 2,
+                'E' => 4,
+                'F' => 5,
+                'G' => 7,
+                'A' => 9,
+                'B' => 11,
+                _ => 0
+            };
+            if (sharp) semitone++;
+
+            // convert octave and semitone to midi note number (A4 = 69)
+            int midiNote = (octave + 1) * 12 + semitone;
+            return 440.0f * (float)Math.Pow(2.0, (midiNote - 69) / 12.0);
+        }
+
+        return 261.63f; // default to middle c
+    }
+    
+    // MUSIC
+    private static void music(int n)
+    {
+        if (n >= 0)
+        {
+            currentMusicRowIndex = n; // start from row n
+            musicRowTimer = 0;
+        }
+        else
+        {
+            // Stop all active music channels when n == -1
+            currentMusicRowIndex = -1;
+            for (int i = 0; i < musicChannels.Length; i++)
+            {
+                if (musicChannels[i].FrameCount > 0)
+                {
+                    Raylib.StopSound(musicChannels[i]);
+                }
+            }
+        }
+    }
     // UTILITIES
     private static float min(float a, float b) => Math.Min(a, b);
     private static float max(float a, float b) => Math.Max(a, b);
@@ -227,17 +371,20 @@ public class CodeRunner
         }
     }
     
-    public static void Run(string code, RenderTexture2D texture, Texture2D spritesheetTexture, int[,] mapTiles, Sound[] sfxArray)
+    public static void Run(string code, RenderTexture2D texture, Texture2D spritesheetTexture, int[,] mapTiles, Sound[] sfxArray, List<FileParser.MusicRow> musicTrack)
     {
         // save the spritesheetTexture to spritesheet so it can be used in the spr func
         spritesheet = spritesheetTexture;
         mapData = mapTiles;
         soundEffects = sfxArray;
+        activeTrack = musicTrack;
         
         Script script = new Script();
         
         // register all the functions for use in the user code
 
+        // MUSIC
+        script.Globals["music"] = (Action<int>)music;
         // UTILITIES
         script.Globals["min"] = (Func<float, float, float>)min;
         script.Globals["max"] = (Func<float, float, float>)max;
@@ -294,6 +441,9 @@ public class CodeRunner
         while (!Raylib.WindowShouldClose())
         {
             Program.HandleWindowResizeAndFullscreen();
+            
+            // update music sequencer
+            UpdateMusicSequencer();
             
             // move all current buttons to previous buttons
             for (int i = 0; i < currentButtons.Length; i++)

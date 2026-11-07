@@ -306,5 +306,36 @@ public class FileParser
             return sound;
         }
     }
+
+    public struct MusicRow
+    {
+        public string[] Channels;
+        public int Ticks;
+    }
+
+    public static List<MusicRow> ParseMusic(string musicText)
+    {
+        var track = new List<MusicRow>();
+        if (string.IsNullOrWhiteSpace(musicText)) return track;
+
+        string[] lines = musicText.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+        foreach (string line in lines)
+        {
+            string trimmed = line.Trim();
+            if (trimmed.StartsWith("--") || string.IsNullOrEmpty(trimmed)) continue;
+
+            string[] parts = trimmed.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 5)
+            {
+                track.Add(new MusicRow
+                {
+                    Channels = new[] { parts[0].Trim(), parts[1].Trim(), parts[2].Trim(), parts[3].Trim() },
+                    Ticks = int.Parse(parts[4].Trim())
+                });
+            }
+        }
+
+        return track;
+    }
     
 }

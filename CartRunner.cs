@@ -17,8 +17,12 @@ public class CartRunner
         Sound[] sfx = cartContent.ContainsKey("sfx")
             ? FileParser.LoadSoundEffects(cartContent["sfx"])
             : new Sound[64];
+
+        List<FileParser.MusicRow> musicTrack = cartContent.ContainsKey("music")
+            ? FileParser.ParseMusic(cartContent["music"])
+            : new List<FileParser.MusicRow>();
         
-        CodeRunner.Run(cartContent["code"], texture, spritesheet, map, sfx);
+        CodeRunner.Run(cartContent["code"], texture, spritesheet, map, sfx, musicTrack);
 
         foreach (var sound in sfx)
         {
