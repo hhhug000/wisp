@@ -56,6 +56,7 @@ local speed = 1
 local msg = 'PRESS Z OR X'
 
 function _init()
+    music(0)
 end
 
 function _update()
@@ -104,6 +105,7 @@ function _draw()
         pset(mx, my, 8)
         pset(mx + 1, my, 8)
         pset(mx - 1, my, 8)
+-- ch0, ch1, ch2, ch3, ticks
         pset(mx, my + 1, 8)
         pset(mx, my - 1, 8)
     else
@@ -122,6 +124,11 @@ __sprites__
 __sfx__
 0, 3, 0, 3, 36:1:7:0, 40:1:7:0, 44:1:7:0, 48:1:7:1
 1, 3, 0, 3, 48:0:7:0, 44:0:7:0, 40:0:7:0, 36:0:7:5
+__music__
+C-3:1:7, --:0:0, --:0:0, --:0:0, 20
+E-3:1:7, --:0:0, --:0:0, --:0:0, 20
+G-3:1:7, --:0:0, --:0:0, --:0:0, 20
+C-4:1:7, --:0:0, --:0:0, --:0:0, 40
         ";
 
         CartRunner.RunCart(code, target);
