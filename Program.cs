@@ -1,6 +1,7 @@
 ﻿using System.Data.Common;
 using System.Globalization;
 using System.Numerics;
+using System.Reflection;
 using MoonSharp.Interpreter;
 using Raylib_cs;
 
@@ -31,6 +32,20 @@ public static class Constants
 
 internal class Program
 {
+    private static string LoadEmbeddedCart(string cartName)
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+
+        string fullResourceName = $"wisp.carts.{cartName}";
+
+        using (Stream stream = assembly.GetManifestResourceStream(fullResourceName))
+        {
+            using (StreamReader reader = new StreamReader(stream))
+            {
+                return reader.ReadToEnd();
+            }
+        }
+    }
     public static void Main(string[] args)
     {
         Raylib.SetConfigFlags(ConfigFlags.ResizableWindow);
@@ -48,7 +63,23 @@ internal class Program
 
         PlayIntroAnimation(target);
 
-        string code = @"wisp cartridge
+        string code = string.Empty;
+        bool isIde = false;
+        
+        if (args.Length > 0 && args[0].ToLower() == "editor")
+        {
+            string fullResourceName = code = LoadEmbeddedCart("ide.wisp");
+            isIde = true;
+            Console.WriteLine("Loaded IDE cart");
+        }
+        else if (args.Length > 0 && File.Exists(args[0]))
+        {
+            code = File.ReadAllText(args[0]);
+            Console.WriteLine($"Loaded cart {args[0]}");
+        }
+        else
+        {
+            code = @"wisp cartridge
 version 1
 __code__
 local rx, ry = 54, 54
@@ -130,8 +161,10 @@ E-3:1:7, --:0:0, --:0:0, --:0:0, 20
 G-3:1:7, --:0:0, --:0:0, --:0:0, 20
 C-4:1:7, --:0:0, --:0:0, --:0:0, 40
         ";
-
-        CartRunner.RunCart(code, target);
+            Console.WriteLine("No cart chosen, running default");
+        }
+        
+        CartRunner.RunCart(code, target, isIde);
         
         while (!Raylib.WindowShouldClose())
         {
