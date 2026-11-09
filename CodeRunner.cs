@@ -1,4 +1,7 @@
-using System.ComponentModel;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using System.Numerics;
 using MoonSharp.Interpreter;
 using Raylib_cs;
@@ -384,7 +387,86 @@ public class CodeRunner
         // register globals for just the IDE
         if (isInternal)
         {
-            Console.WriteLine("Internal globals not added yet, remember to add");
+            script.Globals["get_clipboard"] = (System.Func<string>)(() => {
+                unsafe
+                {
+                    sbyte* ptr = Raylib.GetClipboardText();
+                    return ptr != null ? new string(ptr) : string.Empty;
+                }
+            });
+
+            script.Globals["set_clipboard"] = (System.Action<string>)((text) => {
+                unsafe
+                {
+                    fixed (byte* bytes = System.Text.Encoding.UTF8.GetBytes(text ?? ""))
+                    {
+                        Raylib.SetClipboardText((sbyte*)bytes);
+                    }
+                }
+            });
+
+            script.Globals["load_cart"] = (System.Func<string, Table>)((path) =>
+            {
+                if (!File.Exists(path)) return null;
+                string rawText = File.ReadAllText(path);
+                var sections = FileParser.SplitToSections(rawText);
+
+                Table t = new Table(script);
+                // kvp is key value pair
+                foreach (var kvp in sections)
+                {
+                    t[kvp.Key] = kvp.Value;
+                }
+
+                return t;
+            });
+
+            script.Globals["save_cart"] = (System.Action<string, string, string, string, string, string>)((path, code, sprites, map, sfx, music) =>
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine("wisp cartridge");
+                sb.AppendLine("version 1");
+
+                if (!string.IsNullOrEmpty(code))
+                {
+                    sb.AppendLine("__code__");
+                    sb.AppendLine(code);
+                }
+                if (!string.IsNullOrEmpty(sprites))
+                {
+                    sb.AppendLine("__sprites__");
+                    sb.AppendLine(sprites);
+                }
+                if (!string.IsNullOrEmpty(map))
+                {
+                    sb.AppendLine("__map__");
+                    sb.AppendLine(map);
+                }
+                if (!string.IsNullOrEmpty(sfx))
+                {
+                    sb.AppendLine("__sfx__");
+                    sb.AppendLine(sfx);
+                }
+                if (!string.IsNullOrEmpty(music))
+                {
+                    sb.AppendLine("__music__");
+                    sb.AppendLine(music);
+                }
+                
+                File.WriteAllText(path, sb.ToString());
+                Console.WriteLine($"Saved cart {path}");
+            });
+
+            Func<MoonSharp.Interpreter.Table> listCartsFunc = () => {
+                MoonSharp.Interpreter.Table t = new MoonSharp.Interpreter.Table(script);
+                string[] files = Directory.GetFiles(".", "*.wisp");
+                for (int i = 0; i < files.Length; i++)
+                {
+                    t[i + 1] = Path.GetFileName(files[i]);
+                }
+                return t;
+            };
+            script.Globals["list_carts"] = listCartsFunc;
         }
         
         // register all the functions for use in the user code
