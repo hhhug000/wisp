@@ -64,12 +64,12 @@ internal class Program
         PlayIntroAnimation(target);
 
         string code = string.Empty;
-        bool isIde = false;
+        bool isInternal = false;
         
         if (args.Length > 0 && args[0].ToLower() == "editor")
         {
             string fullResourceName = code = LoadEmbeddedCart("ide.wisp");
-            isIde = true;
+            isInternal = true;
             Console.WriteLine("Loaded IDE cart");
         }
         else if (args.Length > 0 && File.Exists(args[0]))
@@ -164,7 +164,7 @@ C-4:1:7, --:0:0, --:0:0, --:0:0, 40
             Console.WriteLine("No cart chosen, running default");
         }
         
-        CartRunner.RunCart(code, target, isIde);
+        CartRunner.RunCart(code, target, isInternal);
         
         while (!Raylib.WindowShouldClose())
         {

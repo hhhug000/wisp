@@ -5,7 +5,7 @@ namespace wisp;
 
 public class CartRunner
 {
-    public static void RunCart(string cartText, RenderTexture2D texture, bool isIde = false)
+    public static void RunCart(string cartText, RenderTexture2D texture, bool isInternal = false)
     {
         Dictionary<string, string> cartContent = FileParser.SplitToSections(cartText);
         Texture2D spritesheet = FileParser.LoadSpriteSheet(cartContent["sprites"]);
@@ -22,7 +22,7 @@ public class CartRunner
             ? FileParser.ParseMusic(cartContent["music"])
             : new List<FileParser.MusicRow>();
         
-        CodeRunner.Run(cartContent["code"], texture, spritesheet, map, sfx, musicTrack, isIde);
+        CodeRunner.Run(cartContent["code"], texture, spritesheet, map, sfx, musicTrack, isInternal);
 
         foreach (var sound in sfx)
         {

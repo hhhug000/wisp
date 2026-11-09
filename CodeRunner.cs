@@ -371,7 +371,7 @@ public class CodeRunner
         }
     }
     
-    public static void Run(string code, RenderTexture2D texture, Texture2D spritesheetTexture, int[,] mapTiles, Sound[] sfxArray, List<FileParser.MusicRow> musicTrack, bool isIde = false)
+    public static void Run(string code, RenderTexture2D texture, Texture2D spritesheetTexture, int[,] mapTiles, Sound[] sfxArray, List<FileParser.MusicRow> musicTrack, bool isInternal = false)
     {
         // save the spritesheetTexture to spritesheet so it can be used in the spr func
         spritesheet = spritesheetTexture;
@@ -382,9 +382,9 @@ public class CodeRunner
         Script script = new Script();
         
         // register globals for just the IDE
-        if (isIde)
+        if (isInternal)
         {
-            Console.WriteLine("IDE globals not added yet, remember to add");
+            Console.WriteLine("Internal globals not added yet, remember to add");
         }
         
         // register all the functions for use in the user code
