@@ -259,7 +259,7 @@ public class CodeRunner
 
     private static void print(string text, int x, int y, int colorCode)
     {
-        Raylib.DrawText(text, x, y, 10, Constants.Colors[colorCode]);
+        Raylib.DrawText(text, x, y, 5, Constants.Colors[colorCode]);
     }
 
     private static void spr(int n, int x, int y, int? w = null, int? h = null, bool? flipX = null, bool? flipY = null)
